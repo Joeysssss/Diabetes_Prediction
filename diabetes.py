@@ -26,7 +26,7 @@ def load_data():
 
 @st.cache_data
 def split_data(df, train_ratio,stratify):
-    print(stratify)
+    #print(stratify)
     """依照使用者設定之比例分割訓練集與測試集"""
     y = df.Outcome
     x = df.drop(columns=['Outcome'])
