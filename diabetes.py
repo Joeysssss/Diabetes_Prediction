@@ -25,20 +25,21 @@ def load_data():
     return data
 
 @st.cache_data
-def split_data(df, train_ratio):
+def split_data(df, train_ratio,stratify):
+    print(stratify)
     """依照使用者設定之比例分割訓練集與測試集"""
     y = df.Outcome
     x = df.drop(columns=['Outcome'])
-    return train_test_split(x, y, train_size=train_ratio, random_state=0)
+    return train_test_split(x, y, train_size=train_ratio,stratify = y if stratify else None, random_state=0)
 
 @st.cache_resource
-def train_model(classifier_name, train_ratio, params):
+def train_model(classifier_name, train_ratio, params,stratify):
     """
     模型訓練函式 (使用 @st.cache_resource 快取)
     只要模型名稱、訓練資料比例與超參數未改變，就不會重新訓練模型。
     """
     df = load_data()
-    x_train, _, y_train, _ = split_data(df, train_ratio)
+    x_train, _, y_train, _ = split_data(df, train_ratio,stratify)
     
     if classifier_name == 'Decision Tree':
         criterion, splitter = params
@@ -113,9 +114,14 @@ def main():
     test_ratio = round(1.0 - train_ratio, 2)
     st.sidebar.caption(f"訓練集: {int(train_ratio * 100)}% | 測試集: {int(test_ratio * 100)}%")
 
+    use_stratify = st.sidebar.checkbox(
+        "啟用分層抽樣 (Stratify)",
+        value=True,
+        help="維持訓練集與測試集中糖尿病類別的比例"
+    )
     # 分割資料
-    x_train, x_test, y_train, y_test = split_data(df, train_ratio)
-
+    x_train, x_test, y_train, y_test = split_data(df, train_ratio,stratify = use_stratify)
+    #print (use_stratify)
     # 2. 選擇模型
     st.sidebar.subheader("2. 選擇模型")
     classifier = st.sidebar.selectbox(
@@ -152,7 +158,7 @@ def main():
     )
 
     # 取得模型 (利用快取，避免重複訓練)
-    model = train_model(classifier, train_ratio, params)
+    model = train_model(classifier, train_ratio, params,stratify = use_stratify)
 
     # 側邊欄附加功能
     if st.sidebar.button("清除快取並強制重訓"):
